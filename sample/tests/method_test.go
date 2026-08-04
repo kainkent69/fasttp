@@ -10,7 +10,7 @@ import (
 // ---------- All HTTP methods on /methods ----------
 
 func TestMethodGET(t *testing.T) {
-	fasttp.NewFuncTest(t, "GET", "/methods", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "GET", "/methods", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -20,7 +20,7 @@ func TestMethodGET(t *testing.T) {
 }
 
 func TestMethodPOST(t *testing.T) {
-	fasttp.NewFuncTest(t, "POST", "/methods", []byte(`{}`), func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "POST", "/methods", []byte(`{}`), func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusCreated,
@@ -31,7 +31,7 @@ func TestMethodPOST(t *testing.T) {
 }
 
 func TestMethodPUT(t *testing.T) {
-	fasttp.NewFuncTest(t, "PUT", "/methods", []byte(`{}`), func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "PUT", "/methods", []byte(`{}`), func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPut,
 			Status:  http.StatusOK,
@@ -42,7 +42,7 @@ func TestMethodPUT(t *testing.T) {
 }
 
 func TestMethodPATCH(t *testing.T) {
-	fasttp.NewFuncTest(t, "PATCH", "/methods", []byte(`{}`), func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "PATCH", "/methods", []byte(`{}`), func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPatch,
 			Status:  http.StatusOK,
@@ -53,7 +53,7 @@ func TestMethodPATCH(t *testing.T) {
 }
 
 func TestMethodDELETE(t *testing.T) {
-	fasttp.NewFuncTest(t, "DELETE", "/methods", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "DELETE", "/methods", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodDelete,
 			Status: http.StatusOK,
@@ -63,7 +63,7 @@ func TestMethodDELETE(t *testing.T) {
 }
 
 func TestMethodHEAD(t *testing.T) {
-	fasttp.NewFuncTest(t, "HEAD", "/methods", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "HEAD", "/methods", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodHead,
 			Status: http.StatusOK,
@@ -72,7 +72,7 @@ func TestMethodHEAD(t *testing.T) {
 }
 
 func TestMethodOPTIONS(t *testing.T) {
-	fasttp.NewFuncTest(t, "OPTIONS", "/methods", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "OPTIONS", "/methods", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodOptions,
 			Status: http.StatusNoContent,
@@ -83,7 +83,7 @@ func TestMethodOPTIONS(t *testing.T) {
 // ---------- CORS OPTIONS ----------
 
 func TestCORSPreflight(t *testing.T) {
-	fasttp.NewFuncTest(t, "cors preflight", "/items", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "cors preflight", "/items", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodOptions,
 			Status: http.StatusNoContent,

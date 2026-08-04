@@ -1,7 +1,15 @@
 // Package tests provides map-based, deferred-execution HTTP test abstractions
 // for Gin. Methods register expectations into maps/slots; nothing runs until
-// .Run(). Both NewTest (fluent) and NewFuncTest (declarative) delegate to the
-// same TestRunner engine.
+// .Run(). Both New (fluent) and NewFunc (declarative) build the same T type.
+//
+// Struct embedding all the way down — zero delegation methods:
+//
+//	Body       — all body state (request raw, dataType, response parsed)
+//	HeaderMap  — request headers, with Header()/Set() methods
+//	R          — request: embeds HeaderMap + Body
+//	T          — test runner: embeds R
+//
+// t.JSON() IS Body.JSON() via embedding.
 package tests
 
 import (
@@ -15,41 +23,138 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CheckFunc inspects the T after .Run() has executed the request.
+// It uses require/assert on t.t for pass/fail signalling.
+type CheckFunc func(tr *T)
+
+// ---------- Body: all body state, reused via embedding ----------
+
+// Body holds all body state for a request: the raw request payload, the
+// data-type selector, and the parsed response body after .Run(). It is
+// embedded in R (and therefore in T) so its methods are promoted for free.
+type Body struct {
+	raw      interface{} // request payload
+	dataType string      // "json" | "xml" | "buffer" | "yaml" | ""
+	parsed   interface{} // response body after Run() parses it
+}
+
+// Data returns the request payload marshaled to bytes according to dataType.
+// []byte and string raw values pass through as-is; other values are marshaled
+// per Type() (default: JSON).
+func (b *Body) Data() []byte {
+	if b.raw == nil {
+		return nil
+	}
+	switch data := b.raw.(type) {
+	case []byte:
+		return data
+	case string:
+		return []byte(data)
+	}
+	switch b.dataType {
+	case "xml":
+		out, _ := xml.Marshal(b.raw)
+		return out
+	default: // "json", "buffer", "yaml", ""
+		out, _ := json.Marshal(b.raw)
+		return out
+	}
+}
+
+// Type returns the dataType: "json" | "xml" | "buffer" | "yaml" | "".
+func (b *Body) Type() string { return b.dataType }
+
+// Parsed returns the response body parsed by Run() according to Type().
+func (b *Body) Parsed() interface{} { return b.parsed }
+
+// JSON sets dataType to "json" (last data-type call wins).
+func (b *Body) JSON() *Body {
+	b.dataType = "json"
+	return b
+}
+
+// XML sets dataType to "xml" (last data-type call wins).
+func (b *Body) XML() *Body {
+	b.dataType = "xml"
+	return b
+}
+
+// Buffer sets dataType to "buffer" (last data-type call wins).
+func (b *Body) Buffer() *Body {
+	b.dataType = "buffer"
+	return b
+}
+
+// YAML sets dataType to "yaml" (stub — requires yaml dependency) (last call wins).
+func (b *Body) YAML() *Body {
+	b.dataType = "yaml"
+	return b
+}
+
+// ---------- HeaderMap: map with methods ----------
+
 // HeaderMap is a map of request headers to send.
 type HeaderMap map[string]string
 
-// CheckFunc inspects the TestRunner after .Run() has executed the request.
-// It uses require/assert on tr.t for pass/fail signalling.
-type CheckFunc func(tr *TestRunner)
+// Header sets header pairs onto the map: odd arguments are keys, even are
+// values. Overwrites existing keys. Chainable.
+func (h HeaderMap) Header(pairs ...string) HeaderMap {
+	for i := 0; i+1 < len(pairs); i += 2 {
+		h[pairs[i]] = pairs[i+1]
+	}
+	return h
+}
 
-// TestRunner holds all state for a single HTTP test. Request config is built
-// via chain methods (maps/slots). Nothing executes until Run().
-type TestRunner struct {
+// Set replaces all entries in the map with those from m. Chainable.
+func (h HeaderMap) Set(m HeaderMap) HeaderMap {
+	for k := range h {
+		delete(h, k)
+	}
+	for k, v := range m {
+		h[k] = v
+	}
+	return h
+}
+
+// ---------- R: request (embeds HeaderMap + Body) ----------
+
+// R holds request configuration. It embeds HeaderMap (free Header(), Set())
+// and Body (free JSON(), XML(), Buffer(), YAML(), Data(), Type(), Parsed()).
+// It declares zero methods of its own — everything is promoted.
+type R struct {
+	Method string
+	Path   string
+	HeaderMap
+	Body
+}
+
+// ---------- T: test runner (embeds R) ----------
+
+// T holds all state for a single HTTP test. Request config is built via chain
+// methods (maps/slots); nothing executes until Run().
+//
+// Embedding R gives free access to: Method, Path, HeaderMap, Body, Header(),
+// Set(), JSON(), XML(), Buffer(), YAML(), Type(), Parsed().
+// Note: T declares its own Data(fn) which shadows Body.Data() (the raw-bytes
+// accessor stays reachable as t.Body.Data()).
+type T struct {
 	t *testing.T
 
-	// Request config (set before Run)
-	Name      string
-	Path      string
-	Method    string
-	Body      []byte
-	HeaderMap HeaderMap
-	Router    *gin.Engine
+	Name    string
+	Router  *gin.Engine
+	R       // Method, Path, HeaderMap, Body + promoted methods
 
 	// Response state (set during/after Run)
 	Recorder *httptest.ResponseRecorder
 
-	// Check slots — executed in fixed order by Run()
-	formatCheck  CheckFunc   // set by JSON/YAML/XML/Buffer (last call wins)
+	// Check slots — executed in fixed order by Run(): status → data → headers.
+	// Format validation happens during Run's parse phase per Body.Type().
 	statusCheck  CheckFunc   // set by Status (last call wins)
 	dataChecks   []CheckFunc // set by Data (appended, all run)
 	headerChecks []CheckFunc // set by HeaderExists/HeaderEquals (appended, all run)
-
-	// Data handling
-	dataType string      // "json" | "xml" | "buffer" | ""
-	data     interface{} // parsed response body (private), set during Run parse phase
 }
 
-// defaultRouter is the Gin engine set by Start(). All NewTest calls use it.
+// defaultRouter is the Gin engine set by Start(). All New calls use it.
 var defaultRouter *gin.Engine
 
 // Start bootstraps the Gin router used by all tests. Call once in TestMain or
@@ -59,167 +164,121 @@ func Start(r *gin.Engine) *gin.Engine {
 	return r
 }
 
-// NewTest creates a TestRunner in fluent/builder style. Nothing executes until
-// .Run() is called. Every method returns the same runner for chaining.
-func NewTest(t *testing.T, name, path, method string, body []byte) *TestRunner {
-	return &TestRunner{
-		t:           t,
-		Name:        name,
-		Path:        path,
-		Method:      method,
-		Body:        body,
-		HeaderMap:   make(HeaderMap),
-		Router:      defaultRouter,
-		dataChecks:  make([]CheckFunc, 0),
+// New creates a T in fluent/builder style. Nothing executes until .Run() is
+// called. Every method returns its receiver for chaining.
+func New(t *testing.T, name, path, method string, body []byte) *T {
+	return &T{
+		t:      t,
+		Name:   name,
+		Router: defaultRouter,
+		R: R{
+			Method:    method,
+			Path:      path,
+			HeaderMap: make(HeaderMap),
+			Body:      Body{raw: body},
+		},
+		dataChecks:   make([]CheckFunc, 0),
 		headerChecks: make([]CheckFunc, 0),
 	}
 }
 
-// Header sets a single request header into HeaderMap. Overwrites existing key.
-func (tr *TestRunner) Header(key, value string) *TestRunner {
-	tr.HeaderMap[key] = value
-	return tr
-}
-
-// Headers merges a map of request headers into HeaderMap. Overwrites existing keys.
-func (tr *TestRunner) Headers(h HeaderMap) *TestRunner {
-	for k, v := range h {
-		tr.HeaderMap[k] = v
-	}
-	return tr
-}
-
 // Status sets the expected response status code check. Last call wins.
-func (tr *TestRunner) Status(expected int) *TestRunner {
-	tr.statusCheck = checkStatus(expected)
-	return tr
+func (t *T) Status(expected int) *T {
+	t.statusCheck = checkStatus(expected)
+	return t
 }
 
-// JSON sets dataType to "json" and registers a format-validation check.
-// During Run(), the body is parsed as JSON into the private .data field
-// before any Data() callbacks execute. Last data-type call wins.
-func (tr *TestRunner) JSON() *TestRunner {
-	tr.dataType = "json"
-	tr.formatCheck = checkValidJSON()
-	return tr
-}
-
-// YAML sets dataType to "yaml" and registers a format-validation check.
-// Last data-type call wins.
-// TODO: requires gopkg.in/yaml.v3 dependency.
-func (tr *TestRunner) YAML() *TestRunner {
-	tr.dataType = "yaml"
-	tr.formatCheck = checkValidYAML()
-	return tr
-}
-
-// XML sets dataType to "xml" and registers a format-validation check.
-// During Run(), the body is parsed as XML into the private .data field.
-// Last data-type call wins.
-func (tr *TestRunner) XML() *TestRunner {
-	tr.dataType = "xml"
-	tr.formatCheck = checkValidXML()
-	return tr
-}
-
-// Buffer sets dataType to "buffer" and registers a format-validation check.
-// The response body is stored as raw []byte in the private .data field.
-// Last data-type call wins.
-func (tr *TestRunner) Buffer() *TestRunner {
-	tr.dataType = "buffer"
-	tr.formatCheck = checkValidBuffer()
-	return tr
-}
-
-// Data appends a callback that receives the already-parsed response data.
-// Multiple Data() calls are all executed in registration order.
-// If no dataType was set, fn receives the raw []byte body.
-func (tr *TestRunner) Data(fn func(data interface{})) *TestRunner {
-	tr.dataChecks = append(tr.dataChecks, checkData(fn))
-	return tr
+// Data appends a callback that receives the parsed response data
+// (Body.Parsed() — parsed per Type() during Run). Multiple Data() calls are
+// all executed in registration order. If no dataType was set, fn receives the
+// raw []byte body.
+func (t *T) Data(fn func(data interface{})) *T {
+	t.dataChecks = append(t.dataChecks, checkData(fn))
+	return t
 }
 
 // HeaderExists appends a check that asserts a response header key is present
 // and non-empty.
-func (tr *TestRunner) HeaderExists(key string) *TestRunner {
-	tr.headerChecks = append(tr.headerChecks, checkResponseHeaderExists(key))
-	return tr
+func (t *T) HeaderExists(key string) *T {
+	t.headerChecks = append(t.headerChecks, checkResponseHeaderExists(key))
+	return t
 }
 
 // HeaderEquals appends a check that asserts a response header has an exact value.
-func (tr *TestRunner) HeaderEquals(key, expected string) *TestRunner {
-	tr.headerChecks = append(tr.headerChecks, checkResponseHeader(key, expected))
-	return tr
+func (t *T) HeaderEquals(key, expected string) *T {
+	t.headerChecks = append(t.headerChecks, checkResponseHeader(key, expected))
+	return t
 }
 
 // Checks returns the ordered slice of all registered checks. Useful for
-// equivalence testing (verifying NewTest and NewFuncTest produce same checks).
-func (tr *TestRunner) Checks() []CheckFunc {
+// equivalence testing (verifying New and NewFunc produce same checks).
+func (t *T) Checks() []CheckFunc {
 	var all []CheckFunc
-	if tr.formatCheck != nil {
-		all = append(all, tr.formatCheck)
+	if t.statusCheck != nil {
+		all = append(all, t.statusCheck)
 	}
-	if tr.statusCheck != nil {
-		all = append(all, tr.statusCheck)
-	}
-	all = append(all, tr.dataChecks...)
-	all = append(all, tr.headerChecks...)
+	all = append(all, t.dataChecks...)
+	all = append(all, t.headerChecks...)
 	return all
 }
 
-// Run builds the Gin request from maps, executes it, parses the response body
-// according to dataType, then runs all checks in fixed order:
+// Run marshals the request body via Body.Data(), executes the request, parses
+// the response body according to Type() into Body.parsed (with per-type format
+// validation), then runs all checks in fixed order:
 //
-//	formatCheck → statusCheck → dataChecks → headerChecks
+//	statusCheck → dataChecks → headerChecks
 //
-// Returns the TestRunner for post-run inspection.
-func (tr *TestRunner) Run() *TestRunner {
+// Returns the T for post-run inspection.
+func (t *T) Run() *T {
 	// Build and execute request
-	bodyReader := strings.NewReader(string(tr.Body))
-	req := httptest.NewRequest(tr.Method, tr.Path, bodyReader)
+	bodyReader := strings.NewReader(string(t.Body.Data()))
+	req := httptest.NewRequest(t.Method, t.Path, bodyReader)
 
-	for k, v := range tr.HeaderMap {
+	for k, v := range t.HeaderMap {
 		req.Header.Set(k, v)
 	}
 
-	tr.Recorder = httptest.NewRecorder()
-	tr.Router.ServeHTTP(tr.Recorder, req)
+	t.Recorder = httptest.NewRecorder()
+	t.Router.ServeHTTP(t.Recorder, req)
 
-	// Parse phase: decode response body into private .data
-	respBytes := tr.Recorder.Body.Bytes()
-	switch tr.dataType {
+	// Parse phase: format validation + decode response body into Body.parsed
+	respBytes := t.Recorder.Body.Bytes()
+	switch t.Type() {
 	case "json":
+		checkValidJSON()(t)
 		var parsed interface{}
 		_ = json.Unmarshal(respBytes, &parsed)
-		tr.data = parsed
+		t.parsed = parsed
 	case "xml":
+		checkValidXML()(t)
 		var parsed interface{}
 		_ = xml.Unmarshal(respBytes, &parsed)
-		tr.data = parsed
+		t.parsed = parsed
 	case "buffer":
-		tr.data = respBytes
+		checkValidBuffer()(t)
+		t.parsed = respBytes
+	case "yaml":
+		checkValidYAML()(t)
+		t.parsed = respBytes
 	default:
-		tr.data = respBytes
+		t.parsed = respBytes
 	}
 
 	// Check phase: fixed order execution
-	if tr.formatCheck != nil {
-		tr.formatCheck(tr)
+	if t.statusCheck != nil {
+		t.statusCheck(t)
 	}
-	if tr.statusCheck != nil {
-		tr.statusCheck(tr)
+	for _, check := range t.dataChecks {
+		check(t)
 	}
-	for _, check := range tr.dataChecks {
-		check(tr)
-	}
-	for _, check := range tr.headerChecks {
-		check(tr)
+	for _, check := range t.headerChecks {
+		check(t)
 	}
 
-	return tr
+	return t
 }
 
-// TestInfo holds the declarative test configuration for NewFuncTest.
+// TestInfo holds the declarative test configuration for NewFunc.
 type TestInfo struct {
 	Method  string
 	Status  int
@@ -231,19 +290,19 @@ type TestInfo struct {
 	Data    func(data interface{})
 }
 
-// NewFuncTest creates a test using the declarative/single-call pattern.
-// It internally builds a NewTest chain from TestInfo, applies all settings
-// via the same methods, and calls .Run(). Zero code duplication — every
-// NewFuncTest is a NewTest chain underneath.
-func NewFuncTest(t *testing.T, name, path string, body []byte, fn func(*TestRunner) TestInfo) *TestRunner {
-	tr := NewTest(t, name, path, http.MethodGet, body)
+// NewFunc creates a test using the declarative/single-call pattern.
+// It internally builds a New chain from TestInfo, applies all settings via
+// the same methods, and calls .Run(). Zero code duplication — every NewFunc
+// is a New chain underneath.
+func NewFunc(t *testing.T, name, path string, body []byte, fn func(*T) TestInfo) *T {
+	tr := New(t, name, path, http.MethodGet, body)
 	info := fn(tr)
 
 	if info.Method != "" {
 		tr.Method = info.Method
 	}
 	if info.Headers != nil {
-		tr.Headers(info.Headers)
+		tr.HeaderMap.Set(info.Headers)
 	}
 
 	// Data-type: last bool wins, checked in priority order

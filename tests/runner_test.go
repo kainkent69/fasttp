@@ -56,35 +56,35 @@ func init() {
 	Start(setupRouter())
 }
 
-// ---------- NewTest fluent API tests ----------
+// ---------- New fluent API tests (statement-style via embedding) ----------
 
-func TestNewTestGetHello(t *testing.T) {
-	NewTest(t, "get hello", "/hello", http.MethodGet, nil).
-		Status(http.StatusOK).
-		JSON().
-		Data(func(data interface{}) {
-			m := data.(map[string]interface{})
-			assert.Equal(t, "hello", m["message"])
-			assert.Equal(t, true, m["ok"])
-		}).
-		Run()
+func TestNewGetHello(t *testing.T) {
+	tr := New(t, "get hello", "/hello", http.MethodGet, nil)
+	tr.JSON()
+	tr.Status(http.StatusOK)
+	tr.Data(func(data interface{}) {
+		m := data.(map[string]interface{})
+		assert.Equal(t, "hello", m["message"])
+		assert.Equal(t, true, m["ok"])
+	})
+	tr.Run()
 }
 
-func TestNewTestPostEcho(t *testing.T) {
+func TestNewPostEcho(t *testing.T) {
 	body := []byte(`{"name":"test","count":42}`)
-	NewTest(t, "post echo", "/echo", http.MethodPost, body).
-		Header("Content-Type", "application/json").
-		Status(http.StatusOK).
-		JSON().
-		Data(func(data interface{}) {
-			m := data.(map[string]interface{})
-			assert.Equal(t, "test", m["name"])
-			assert.Equal(t, float64(42), m["count"])
-		}).
-		Run()
+	tr := New(t, "post echo", "/echo", http.MethodPost, body)
+	tr.Header("Content-Type", "application/json")
+	tr.JSON()
+	tr.Status(http.StatusOK)
+	tr.Data(func(data interface{}) {
+		m := data.(map[string]interface{})
+		assert.Equal(t, "test", m["name"])
+		assert.Equal(t, float64(42), m["count"])
+	})
+	tr.Run()
 }
 
-func TestNewTestStatusCodeVariants(t *testing.T) {
+func TestNewStatusCodeVariants(t *testing.T) {
 	cases := []struct {
 		path   string
 		status int
@@ -97,61 +97,61 @@ func TestNewTestStatusCodeVariants(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.path, func(t *testing.T) {
-			NewTest(t, tc.path, tc.path, http.MethodGet, nil).
-				Status(tc.status).
-				JSON().
-				Run()
+			tr := New(t, tc.path, tc.path, http.MethodGet, nil)
+			tr.JSON()
+			tr.Status(tc.status)
+			tr.Run()
 		})
 	}
 }
 
-func TestNewTestHeaderChecks(t *testing.T) {
-	NewTest(t, "headers check", "/hello", http.MethodGet, nil).
-		Status(http.StatusOK).
-		JSON().
-		HeaderExists("Content-Type").
-		HeaderEquals("Content-Type", "application/json; charset=utf-8").
-		Run()
+func TestNewHeaderChecks(t *testing.T) {
+	tr := New(t, "headers check", "/hello", http.MethodGet, nil)
+	tr.JSON()
+	tr.Status(http.StatusOK)
+	tr.HeaderExists("Content-Type")
+	tr.HeaderEquals("Content-Type", "application/json; charset=utf-8")
+	tr.Run()
 }
 
-func TestNewTestCustomHeaders(t *testing.T) {
-	NewTest(t, "custom headers", "/headers", http.MethodGet, nil).
-		Header("X-Custom", "my-value").
-		Status(http.StatusOK).
-		JSON().
-		Data(func(data interface{}) {
-			m := data.(map[string]interface{})
-			assert.Equal(t, "my-value", m["x-custom"])
-		}).
-		Run()
+func TestNewCustomHeaders(t *testing.T) {
+	tr := New(t, "custom headers", "/headers", http.MethodGet, nil)
+	tr.Header("X-Custom", "my-value")
+	tr.JSON()
+	tr.Status(http.StatusOK)
+	tr.Data(func(data interface{}) {
+		m := data.(map[string]interface{})
+		assert.Equal(t, "my-value", m["x-custom"])
+	})
+	tr.Run()
 }
 
-func TestNewTestNoDataType(t *testing.T) {
+func TestNewNoDataType(t *testing.T) {
 	// No JSON/XML/Buffer — Data() receives raw bytes
-	NewTest(t, "raw body", "/hello", http.MethodGet, nil).
-		Status(http.StatusOK).
-		Data(func(data interface{}) {
-			b := data.([]byte)
-			assert.Contains(t, string(b), "hello")
-		}).
-		Run()
+	tr := New(t, "raw body", "/hello", http.MethodGet, nil)
+	tr.Status(http.StatusOK)
+	tr.Data(func(data interface{}) {
+		b := data.([]byte)
+		assert.Contains(t, string(b), "hello")
+	})
+	tr.Run()
 }
 
-func TestNewTestBuffer(t *testing.T) {
-	NewTest(t, "buffer body", "/hello", http.MethodGet, nil).
-		Status(http.StatusOK).
-		Buffer().
-		Data(func(data interface{}) {
-			b := data.([]byte)
-			assert.Contains(t, string(b), "hello")
-		}).
-		Run()
+func TestNewBuffer(t *testing.T) {
+	tr := New(t, "buffer body", "/hello", http.MethodGet, nil)
+	tr.Buffer()
+	tr.Status(http.StatusOK)
+	tr.Data(func(data interface{}) {
+		b := data.([]byte)
+		assert.Contains(t, string(b), "hello")
+	})
+	tr.Run()
 }
 
-// ---------- NewFuncTest declarative API tests ----------
+// ---------- NewFunc declarative API tests ----------
 
-func TestNewFuncTestGetHello(t *testing.T) {
-	NewFuncTest(t, "get hello func", "/hello", nil, func(tr *TestRunner) TestInfo {
+func TestNewFuncGetHello(t *testing.T) {
+	NewFunc(t, "get hello func", "/hello", nil, func(tr *T) TestInfo {
 		return TestInfo{
 			Status: http.StatusOK,
 			JSON:   true,
@@ -164,9 +164,9 @@ func TestNewFuncTestGetHello(t *testing.T) {
 	})
 }
 
-func TestNewFuncTestPostEcho(t *testing.T) {
+func TestNewFuncPostEcho(t *testing.T) {
 	body := []byte(`{"name":"func","count":99}`)
-	NewFuncTest(t, "post echo func", "/echo", body, func(tr *TestRunner) TestInfo {
+	NewFunc(t, "post echo func", "/echo", body, func(tr *T) TestInfo {
 		return TestInfo{
 			Method: http.MethodPost,
 			Status: http.StatusOK,
@@ -183,8 +183,8 @@ func TestNewFuncTestPostEcho(t *testing.T) {
 	})
 }
 
-func TestNewFuncTestHeadersAndStatus(t *testing.T) {
-	NewFuncTest(t, "headers func", "/hello", nil, func(tr *TestRunner) TestInfo {
+func TestNewFuncHeadersAndStatus(t *testing.T) {
+	NewFunc(t, "headers func", "/hello", nil, func(tr *T) TestInfo {
 		return TestInfo{
 			Status: http.StatusOK,
 			JSON:   true,
@@ -194,24 +194,24 @@ func TestNewFuncTestHeadersAndStatus(t *testing.T) {
 
 // ---------- equivalence meta-test ----------
 
-func TestNewTestAndNewFuncTestAreEquivalent(t *testing.T) {
+func TestNewAndNewFuncAreEquivalent(t *testing.T) {
 	// Both styles produce identical results for the same test case.
 	// We verify: same checks, same status, same parsed data shape.
 
-	// Fluent
-	fluent := NewTest(t, "equiv", "/hello", http.MethodGet, nil).
-		Status(http.StatusOK).
-		JSON().
-		Data(func(data interface{}) {})
+	// Fluent (statement-style via embedding)
+	fluent := New(t, "equiv", "/hello", http.MethodGet, nil)
+	fluent.JSON()
+	fluent.Status(http.StatusOK)
+	fluent.Data(func(data interface{}) {})
 
 	// Declarative (does not call Run — we compare pre-Run state)
-	decl := NewTest(t, "equiv", "/hello", http.MethodGet, nil)
+	decl := New(t, "equiv", "/hello", http.MethodGet, nil)
 	info := TestInfo{
 		Status: http.StatusOK,
 		JSON:   true,
 		Data:   func(data interface{}) {},
 	}
-	// Apply same way NewFuncTest does
+	// Apply same way NewFunc does
 	decl.JSON()
 	decl.Status(info.Status)
 	decl.Data(info.Data)
@@ -219,7 +219,7 @@ func TestNewTestAndNewFuncTestAreEquivalent(t *testing.T) {
 	// Compare check counts
 	assert.Equal(t, len(fluent.Checks()), len(decl.Checks()),
 		"fluent and declarative must produce same number of checks")
-	assert.Equal(t, fluent.dataType, decl.dataType,
+	assert.Equal(t, fluent.Type(), decl.Type(),
 		"fluent and declarative must have same dataType")
 
 	// Run both and verify same outcome
@@ -232,16 +232,16 @@ func TestNewTestAndNewFuncTestAreEquivalent(t *testing.T) {
 		"fluent and declarative must produce same response body")
 }
 
-func TestNewFuncTestInternallyUsesNewTest(t *testing.T) {
-	// NewFuncTest must create the same check structure as chained NewTest.
-	// We assert that the resulting TestRunner has identical fields.
+func TestNewFuncInternallyUsesNew(t *testing.T) {
+	// NewFunc must create the same check structure as a New chain.
+	// We assert that the resulting T has identical fields.
 
 	body := []byte(`{"x":1}`)
 	path := "/echo"
 	status := http.StatusOK
 
-	// Via NewFuncTest (calls Run internally)
-	result := NewFuncTest(t, "internal check", path, body, func(tr *TestRunner) TestInfo {
+	// Via NewFunc (calls Run internally)
+	result := NewFunc(t, "internal check", path, body, func(tr *T) TestInfo {
 		return TestInfo{
 			Method: http.MethodPost,
 			Status: status,
@@ -259,48 +259,48 @@ func TestNewFuncTestInternallyUsesNewTest(t *testing.T) {
 	assert.Equal(t, status, result.Recorder.Code)
 	assert.Equal(t, http.MethodPost, result.Method)
 	assert.Equal(t, "application/json", result.HeaderMap["Content-Type"])
-	assert.Equal(t, "json", result.dataType)
+	assert.Equal(t, "json", result.Type())
 }
 
 // ---------- XML tests ----------
 
-func TestNewTestXML(t *testing.T) {
-	NewTest(t, "xml response", "/xml", http.MethodGet, nil).
-		Status(http.StatusOK).
-		XML().
-		Run()
+func TestNewXML(t *testing.T) {
+	tr := New(t, "xml response", "/xml", http.MethodGet, nil)
+	tr.XML()
+	tr.Status(http.StatusOK)
+	tr.Run()
 }
 
 // ---------- status-code raw tests ----------
 
-func TestNewTestRawResponse(t *testing.T) {
-	NewTest(t, "raw string", "/status/raw", http.MethodGet, nil).
-		Status(http.StatusOK).
-		Data(func(data interface{}) {
-			b := data.([]byte)
-			assert.Equal(t, "raw", string(b))
-		}).
-		Run()
+func TestNewRawResponse(t *testing.T) {
+	tr := New(t, "raw string", "/status/raw", http.MethodGet, nil)
+	tr.Status(http.StatusOK)
+	tr.Data(func(data interface{}) {
+		b := data.([]byte)
+		assert.Equal(t, "raw", string(b))
+	})
+	tr.Run()
 }
 
 // ---------- multiple Data callbacks ----------
 
-func TestNewTestMultipleDataCallbacks(t *testing.T) {
+func TestNewMultipleDataCallbacks(t *testing.T) {
 	callCount := 0
-	NewTest(t, "multi data", "/hello", http.MethodGet, nil).
-		Status(http.StatusOK).
-		JSON().
-		Data(func(data interface{}) {
-			callCount++
-			m := data.(map[string]interface{})
-			assert.Contains(t, m, "message")
-		}).
-		Data(func(data interface{}) {
-			callCount++
-			m := data.(map[string]interface{})
-			assert.Contains(t, m, "ok")
-		}).
-		Run()
+	tr := New(t, "multi data", "/hello", http.MethodGet, nil)
+	tr.JSON()
+	tr.Status(http.StatusOK)
+	tr.Data(func(data interface{}) {
+		callCount++
+		m := data.(map[string]interface{})
+		assert.Contains(t, m, "message")
+	})
+	tr.Data(func(data interface{}) {
+		callCount++
+		m := data.(map[string]interface{})
+		assert.Contains(t, m, "ok")
+	})
+	tr.Run()
 
 	assert.Equal(t, 2, callCount, "both Data callbacks should have been invoked")
 }

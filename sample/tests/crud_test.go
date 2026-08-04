@@ -12,7 +12,7 @@ import (
 // ---------- GET /items ----------
 
 func TestGetItemsEmpty(t *testing.T) {
-	fasttp.NewFuncTest(t, "list empty", "/items", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "list empty", "/items", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -29,7 +29,7 @@ func TestGetItemsWithMultipleItems(t *testing.T) {
 	// Seed two items
 	seed := func(name string, price float64) {
 		body := jsonMarshal(map[string]interface{}{"name": name, "price": price})
-		fasttp.NewFuncTest(t, "seed "+name, "/items", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+		fasttp.NewFunc(t, "seed "+name, "/items", body, func(tr *fasttp.T) fasttp.TestInfo {
 			return fasttp.TestInfo{
 				Method:  http.MethodPost,
 				Status:  http.StatusCreated,
@@ -41,7 +41,7 @@ func TestGetItemsWithMultipleItems(t *testing.T) {
 	seed("alpha", 10.0)
 	seed("beta", 20.0)
 
-	fasttp.NewFuncTest(t, "list multiple", "/items", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "list multiple", "/items", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -55,7 +55,7 @@ func TestGetItemsWithMultipleItems(t *testing.T) {
 }
 
 func TestGetItemsFilterByName(t *testing.T) {
-	fasttp.NewFuncTest(t, "filter items", "/items?q=alpha", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "filter items", "/items?q=alpha", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -74,7 +74,7 @@ func TestGetItemsFilterByName(t *testing.T) {
 // ---------- GET /items/:id ----------
 
 func TestGetItemFound(t *testing.T) {
-	fasttp.NewFuncTest(t, "get item", "/items/1", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "get item", "/items/1", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -87,7 +87,7 @@ func TestGetItemFound(t *testing.T) {
 }
 
 func TestGetItemNotFound(t *testing.T) {
-	fasttp.NewFuncTest(t, "get missing", "/items/99999", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "get missing", "/items/99999", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusNotFound,
@@ -100,7 +100,7 @@ func TestGetItemNotFound(t *testing.T) {
 }
 
 func TestGetItemBadIDFormat(t *testing.T) {
-	fasttp.NewFuncTest(t, "get bad id", "/items/abc", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "get bad id", "/items/abc", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusBadRequest,
@@ -113,7 +113,7 @@ func TestGetItemBadIDFormat(t *testing.T) {
 }
 
 func TestGetItemZeroID(t *testing.T) {
-	fasttp.NewFuncTest(t, "get zero id", "/items/0", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "get zero id", "/items/0", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusNotFound,
@@ -123,7 +123,7 @@ func TestGetItemZeroID(t *testing.T) {
 }
 
 func TestGetItemNegativeID(t *testing.T) {
-	fasttp.NewFuncTest(t, "get negative id", "/items/-1", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "get negative id", "/items/-1", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusNotFound,
@@ -141,7 +141,7 @@ func TestCreateItemSuccess(t *testing.T) {
 		"tags":  []string{"tag1", "tag2"},
 		"active": true,
 	})
-	fasttp.NewFuncTest(t, "create item", "/items", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "create item", "/items", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusCreated,
@@ -161,7 +161,7 @@ func TestCreateItemSuccess(t *testing.T) {
 }
 
 func TestCreateItemBadJSON(t *testing.T) {
-	fasttp.NewFuncTest(t, "create bad json", "/items", []byte("not json"), func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "create bad json", "/items", []byte("not json"), func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusBadRequest,
@@ -176,7 +176,7 @@ func TestCreateItemBadJSON(t *testing.T) {
 
 func TestCreateItemMissingName(t *testing.T) {
 	body := jsonMarshal(map[string]interface{}{"price": 10.0})
-	fasttp.NewFuncTest(t, "create no name", "/items", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "create no name", "/items", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusUnprocessableEntity,
@@ -190,7 +190,7 @@ func TestCreateItemMissingName(t *testing.T) {
 }
 
 func TestCreateItemEmptyBody(t *testing.T) {
-	fasttp.NewFuncTest(t, "create empty body", "/items", []byte{}, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "create empty body", "/items", []byte{}, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusBadRequest,
@@ -202,7 +202,7 @@ func TestCreateItemEmptyBody(t *testing.T) {
 
 func TestCreateItemExtraFields(t *testing.T) {
 	body := []byte(`{"name":"extra","price":5.0,"unknown_field":"should be ignored"}`)
-	fasttp.NewFuncTest(t, "create extra fields", "/items", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "create extra fields", "/items", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusCreated,
@@ -219,7 +219,7 @@ func TestCreateItemExtraFields(t *testing.T) {
 
 func TestPutItemFullReplace(t *testing.T) {
 	body := []byte(`{"name":"replaced","price":99.99,"active":false}`)
-	fasttp.NewFuncTest(t, "put replace", "/items/1", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "put replace", "/items/1", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPut,
 			Status:  http.StatusOK,
@@ -236,7 +236,7 @@ func TestPutItemFullReplace(t *testing.T) {
 
 func TestPutItemNotFound(t *testing.T) {
 	body := []byte(`{"name":"nope"}`)
-	fasttp.NewFuncTest(t, "put missing", "/items/99999", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "put missing", "/items/99999", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPut,
 			Status:  http.StatusNotFound,
@@ -251,7 +251,7 @@ func TestPutItemNotFound(t *testing.T) {
 
 func TestPutItemBadID(t *testing.T) {
 	body := []byte(`{"name":"x"}`)
-	fasttp.NewFuncTest(t, "put bad id", "/items/abc", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "put bad id", "/items/abc", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPut,
 			Status:  http.StatusBadRequest,
@@ -265,7 +265,7 @@ func TestPutItemBadID(t *testing.T) {
 
 func TestPatchItemPartial(t *testing.T) {
 	body := []byte(`{"price":55.55}`)
-	fasttp.NewFuncTest(t, "patch partial", "/items/1", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "patch partial", "/items/1", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPatch,
 			Status:  http.StatusOK,
@@ -280,7 +280,7 @@ func TestPatchItemPartial(t *testing.T) {
 
 func TestPatchItemNotFound(t *testing.T) {
 	body := []byte(`{"name":"x"}`)
-	fasttp.NewFuncTest(t, "patch missing", "/items/99999", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "patch missing", "/items/99999", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPatch,
 			Status:  http.StatusNotFound,
@@ -292,7 +292,7 @@ func TestPatchItemNotFound(t *testing.T) {
 
 func TestPatchItemTags(t *testing.T) {
 	body := []byte(`{"tags":["a","b","c"]}`)
-	fasttp.NewFuncTest(t, "patch tags", "/items/1", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "patch tags", "/items/1", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPatch,
 			Status:  http.StatusOK,
@@ -310,7 +310,7 @@ func TestPatchItemTags(t *testing.T) {
 // ---------- DELETE /items/:id ----------
 
 func TestDeleteItemSuccess(t *testing.T) {
-	fasttp.NewFuncTest(t, "delete item", "/items/1", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "delete item", "/items/1", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodDelete,
 			Status: http.StatusOK,
@@ -323,7 +323,7 @@ func TestDeleteItemSuccess(t *testing.T) {
 }
 
 func TestDeleteItemNotFound(t *testing.T) {
-	fasttp.NewFuncTest(t, "delete missing", "/items/99999", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "delete missing", "/items/99999", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodDelete,
 			Status: http.StatusNotFound,
@@ -333,7 +333,7 @@ func TestDeleteItemNotFound(t *testing.T) {
 }
 
 func TestDeleteItemBadID(t *testing.T) {
-	fasttp.NewFuncTest(t, "delete bad id", "/items/abc", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "delete bad id", "/items/abc", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodDelete,
 			Status: http.StatusBadRequest,
@@ -348,7 +348,7 @@ func TestItemFullLifecycle(t *testing.T) {
 	resetStore()
 	t.Run("step1_create", func(t *testing.T) {
 		body := jsonMarshal(map[string]interface{}{"name": "lifecycle", "price": 1.0})
-		fasttp.NewFuncTest(t, "create", "/items", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+		fasttp.NewFunc(t, "create", "/items", body, func(tr *fasttp.T) fasttp.TestInfo {
 			return fasttp.TestInfo{
 				Method:  http.MethodPost,
 				Status:  http.StatusCreated,
@@ -361,7 +361,7 @@ func TestItemFullLifecycle(t *testing.T) {
 		})
 	})
 	t.Run("step2_read", func(t *testing.T) {
-		fasttp.NewFuncTest(t, "read", "/items/1", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+		fasttp.NewFunc(t, "read", "/items/1", nil, func(tr *fasttp.T) fasttp.TestInfo {
 			return fasttp.TestInfo{
 				Method: http.MethodGet,
 				Status: http.StatusOK,
@@ -374,7 +374,7 @@ func TestItemFullLifecycle(t *testing.T) {
 	})
 	t.Run("step3_patch", func(t *testing.T) {
 		body := []byte(`{"price":99.99}`)
-		fasttp.NewFuncTest(t, "patch", "/items/1", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+		fasttp.NewFunc(t, "patch", "/items/1", body, func(tr *fasttp.T) fasttp.TestInfo {
 			return fasttp.TestInfo{
 				Method:  http.MethodPatch,
 				Status:  http.StatusOK,
@@ -387,7 +387,7 @@ func TestItemFullLifecycle(t *testing.T) {
 		})
 	})
 	t.Run("step4_delete", func(t *testing.T) {
-		fasttp.NewFuncTest(t, "delete", "/items/1", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+		fasttp.NewFunc(t, "delete", "/items/1", nil, func(tr *fasttp.T) fasttp.TestInfo {
 			return fasttp.TestInfo{
 				Method: http.MethodDelete,
 				Status: http.StatusOK,
@@ -396,7 +396,7 @@ func TestItemFullLifecycle(t *testing.T) {
 		})
 	})
 	t.Run("step5_verify_gone", func(t *testing.T) {
-		fasttp.NewFuncTest(t, "verify", "/items/1", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+		fasttp.NewFunc(t, "verify", "/items/1", nil, func(tr *fasttp.T) fasttp.TestInfo {
 			return fasttp.TestInfo{
 				Method: http.MethodGet,
 				Status: http.StatusNotFound,
@@ -410,7 +410,7 @@ func TestItemFullLifecycle(t *testing.T) {
 
 func TestCreateUniqueItemSuccess(t *testing.T) {
 	body := jsonMarshal(map[string]interface{}{"name": "unique-one", "price": 5.0})
-	fasttp.NewFuncTest(t, "unique ok", "/unique-items", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "unique ok", "/unique-items", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusCreated,
@@ -422,7 +422,7 @@ func TestCreateUniqueItemSuccess(t *testing.T) {
 
 func TestCreateUniqueItemConflict(t *testing.T) {
 	body := jsonMarshal(map[string]interface{}{"name": "unique-one", "price": 10.0})
-	fasttp.NewFuncTest(t, "unique conflict", "/unique-items", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "unique conflict", "/unique-items", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusConflict,
@@ -442,7 +442,7 @@ func TestCRUDStructComparison(t *testing.T) {
 	body := jsonMarshal(map[string]interface{}{
 		"name": "structitem", "price": 12.34, "active": true,
 	})
-	fasttp.NewFuncTest(t, "struct create", "/items", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "struct create", "/items", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusCreated,

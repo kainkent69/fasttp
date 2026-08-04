@@ -1,69 +1,81 @@
 # FastTP — TODO
 
 > **Constraint:** `New` (fluent) and `NewFunc` (declarative) MUST be equivalent.
+
+---
+
+## Phase 5: Documentation
+
+### 5.1 Godoc audit ✅
+- [x] `tests/` package — package doc + all exported types, funcs, methods
+- [x] `status/` package — package doc + constants + Text()
+- [x] Sample apps — demo code, godoc not required
+
+### 5.2 README.md ✅
+- [x] Project overview + why fasttp
+- [x] Architecture diagram (Body → R → T embedding chain)
+- [x] Quick start example (New + NewFunc)
+- [x] API reference tables: Body, HeaderMap, R, T, New, NewFunc, TestInfo, Start
+- [x] Status constants reference
+- [x] Project structure tree
+- [x] Sample projects overview
+- [x] Content type support matrix
+- [x] Run instructions
 > Same capabilities, same underlying execution, same assertions. **`NewFunc` must use `New` internally — zero code dup.**
 
 ---
 
 ## Phase 4: API Redesign (promt2.md)
 
-### 4.1 `HeaderMap` — type with methods
-- [ ] `type HeaderMap map[string]string`
-- [ ] `(h HeaderMap) Header(pairs ...string) HeaderMap` — odd=key, even=value, chainable
-- [ ] `(h HeaderMap) Set(m HeaderMap) HeaderMap` — replace all entries
+> **Design rule:** Struct embedding all the way down. Zero delegation methods.
+> `Body` reusable — embedded in both `R` and via `R` in `T`.
+> All body state lives in `Body`: request `raw`, `dataType`, response `parsed`.
 
-### 4.2 `Body` — request body struct
-- [ ] `data interface{}` (private) — raw body data
-- [ ] `dataType string` (private) — `"json"|"xml"|"buffer"|""`
-- [ ] `(b *Body) Data() []byte` — marshal data to bytes based on dataType
-- [ ] `(b *Body) Type() string` — return dataType
-- [ ] `(b *Body) JSON() *Body` — set dataType="json", store raw data
-- [ ] `(b *Body) XML() *Body` — set dataType="xml"
-- [ ] `(b *Body) Buffer() *Body` — set dataType="buffer"
+### 4.1 `Body` — all body state, reused via embedding ✅
+- [x] `raw interface{}` (private) — request payload
+- [x] `dataType string` (private) — `"json"|"xml"|"buffer"|"yaml"|""`
+- [x] `parsed interface{}` (private) — response body after `.Run()` parses it
+- [x] `(b *Body) Data() []byte` — marshal `raw` to bytes per `dataType`
+- [x] `(b *Body) Type() string` — return `dataType`
+- [x] `(b *Body) Parsed() interface{}` — return `parsed`
+- [x] `(b *Body) JSON() *Body` — set dataType="json"
+- [x] `(b *Body) XML() *Body` — set dataType="xml"
+- [x] `(b *Body) Buffer() *Body` — set dataType="buffer"
+- [x] `(b *Body) YAML() *Body` — set dataType="yaml" (stub)
 
-### 4.3 `R` — request (struct embedding)
-- [ ] `Method string`
-- [ ] `Path string`
-- [ ] Embeds `HeaderMap` — gives `R.Header(pairs...)`, `R.Set(m)`
-- [ ] `Body Body` — named field (NOT embedded, avoids `data` conflict with T.response data)
-- [ ] `(r *R) JSON() *R` → `r.Body.JSON()`
-- [ ] `(r *R) XML() *R` → `r.Body.XML()`
-- [ ] `(r *R) Buffer() *R` → `r.Body.Buffer()`
+### 4.2 `HeaderMap` — map type with methods ✅
+- [x] `type HeaderMap map[string]string`
+- [x] `(h HeaderMap) Header(pairs ...string) HeaderMap` — odd=key, even=value
+- [x] `(h HeaderMap) Set(m HeaderMap) HeaderMap` — replace all entries
 
-### 4.4 `T` — test runner (final shape)
-- [ ] `Req R` — named field (not embedded, avoids Body.data conflict)
-- [ ] `Router *gin.Engine`
-- [ ] `Recorder *httptest.ResponseRecorder`
-- [ ] Private: `t *testing.T`, `data interface{}` (parsed response), `formatCheck/statusCheck/dataChecks/headerChecks`
-- [ ] `(t *T) Header(pairs ...string) *T` → delegates to `t.Req.HeaderMap.Header()`
-- [ ] `(t *T) SetHeader(pairs ...string) *T` → delegates to `t.Req.HeaderMap.Header()`
-- [ ] `(t *T) Headers(m HeaderMap) *T` → delegates to `t.Req.HeaderMap.Set()`
-- [ ] `(t *T) JSON() *T` → `t.Req.Body.JSON()` + register format check
-- [ ] `(t *T) XML() *T` → `t.Req.Body.XML()` + register format check
-- [ ] `(t *T) Buffer() *T` → `t.Req.Body.Buffer()` + register format check
-- [ ] `(t *T) Status(code int) *T` — set status check slot
-- [ ] `(t *T) Data(fn func(interface{})) *T` — append data callback
-- [ ] `(t *T) HeaderExists(key string) *T` — response header check
-- [ ] `(t *T) HeaderEquals(key, expected string) *T` — response header check
-- [ ] `(t *T) Run() *T` — build request from Req, execute, parse, run checks
-- [ ] `(t *T) Checks() []CheckFunc` — for equivalence testing
+### 4.3 `R` — request (embeds both) ✅
+- [x] `Method string`, `Path string`
+- [x] Embeds `HeaderMap` → free `Header()`, `Set()`
+- [x] Embeds `Body` → free `JSON()`, `XML()`, `Buffer()`, `Data()`, `Type()`, `Parsed()`
+- [x] Zero methods on R itself
 
-### 4.5 `New` + `NewFunc` (renamed + verified equivalent)
-- [ ] `New(t, name, path, method string, body []byte) *T` (was NewTest)
-- [ ] `NewFunc(t, name, path string, body []byte, fn func(*T) TestInfo) *T` (was NewFuncTest)
-- [ ] `NewFunc` internally builds `New` chain — zero code dup
-- [ ] Meta-test: `TestNewAndNewFuncAreEquivalent`
+### 4.4 `T` — test runner (embeds R) ✅
+- [x] Embeds `R` — free everything
+- [x] Check slots: `statusCheck`, `dataChecks`, `headerChecks`
+- [x] `Status()`, `Data(fn)`, `HeaderExists()`, `HeaderEquals()`, `Run()`, `Checks()`
+- [x] Format validation auto-runs in Run's parse phase
+- [x] **Zero delegation.** `t.JSON()` IS `Body.JSON()` via embedding. `T.Data(fn)` shadows `Body.Data()` on purpose.
 
-### 4.6 `status/` package
-- [ ] `status/status.go` — typed constants: `Ok=200`, `Created=201`, `NoContent=204`, `BadRequest=400`, `Unauthorized=401`, `Forbidden=403`, `NotFound=404`, `Conflict=409`, `Unprocessable=422`, `TooMany=429`, `Internal=500`, `ServiceUnavailable=503`
-- [ ] `status.Text(code int) string` — wraps `http.StatusText`
+### 4.5 `New` + `NewFunc` ✅
+- [x] `New(t, name, path, method, body) *T`
+- [x] `NewFunc(t, name, path, body, fn func(*T) TestInfo) *T`
+- [x] `NewFunc` builds `New` chain internally — zero code dup
+- [x] Meta-test: `TestNewAndNewFuncAreEquivalent` — passes
 
-### 4.7 Update all consumers
-- [ ] `tests/runner_test.go` — migrate to new API
-- [ ] `sample/tests/*.go` — migrate all 93 tests to `New`/`NewFunc`/`status.*`
-- [ ] `sample/app/` — verify no changes needed
-- [ ] `tests/checks.go` — verify no changes needed
-- [ ] All tests pass
+### 4.6 `status/` package ✅
+- [x] `status/status.go` — 15 constants + `Text()` helper
+
+### 4.7 Migrate all consumers ✅
+- [x] `tests/runner.go` — full rewrite
+- [x] `tests/checks.go` — updated for Body.parsed, uses `*T`
+- [x] `tests/runner_test.go` — 16 tests migrated, statement-style
+- [x] `sample/tests/*.go` — 93 tests migrated
+- [x] All 109 tests pass, `go vet ./...` clean
 
 ---
 

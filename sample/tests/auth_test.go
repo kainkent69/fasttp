@@ -12,7 +12,7 @@ import (
 // ---------- Auth: no token ----------
 
 func TestAuthNoToken(t *testing.T) {
-	fasttp.NewFuncTest(t, "auth no token", "/auth/profile", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "auth no token", "/auth/profile", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusUnauthorized,
@@ -25,7 +25,7 @@ func TestAuthNoToken(t *testing.T) {
 }
 
 func TestAuthNoTokenSettings(t *testing.T) {
-	fasttp.NewFuncTest(t, "auth no token settings", "/auth/settings", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "auth no token settings", "/auth/settings", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusUnauthorized,
@@ -37,7 +37,7 @@ func TestAuthNoTokenSettings(t *testing.T) {
 // ---------- Auth: bad token ----------
 
 func TestAuthBadToken(t *testing.T) {
-	fasttp.NewFuncTest(t, "auth bad token", "/auth/profile", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "auth bad token", "/auth/profile", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusForbidden,
@@ -53,7 +53,7 @@ func TestAuthBadToken(t *testing.T) {
 }
 
 func TestAuthEmptyToken(t *testing.T) {
-	fasttp.NewFuncTest(t, "auth empty token", "/auth/profile", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "auth empty token", "/auth/profile", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusUnauthorized,
@@ -68,7 +68,7 @@ func TestAuthEmptyToken(t *testing.T) {
 // ---------- Auth: valid token ----------
 
 func TestAuthValidToken(t *testing.T) {
-	fasttp.NewFuncTest(t, "auth valid token", "/auth/profile", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "auth valid token", "/auth/profile", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -84,7 +84,7 @@ func TestAuthValidToken(t *testing.T) {
 }
 
 func TestAuthValidTokenSettings(t *testing.T) {
-	fasttp.NewFuncTest(t, "auth settings", "/auth/settings", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "auth settings", "/auth/settings", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -102,7 +102,7 @@ func TestAuthValidTokenSettings(t *testing.T) {
 // ---------- Admin: requires admin scope ----------
 
 func TestAdminWithUserToken(t *testing.T) {
-	fasttp.NewFuncTest(t, "admin user token", "/admin/dashboard", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "admin user token", "/admin/dashboard", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusForbidden,
@@ -118,7 +118,7 @@ func TestAdminWithUserToken(t *testing.T) {
 }
 
 func TestAdminWithAdminToken(t *testing.T) {
-	fasttp.NewFuncTest(t, "admin token", "/admin/dashboard", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "admin token", "/admin/dashboard", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -136,7 +136,7 @@ func TestAdminWithAdminToken(t *testing.T) {
 // ---------- Admin: failed status tracking ----------
 
 func TestAdminFailedStatuses(t *testing.T) {
-	fasttp.NewFuncTest(t, "failed statuses", "/admin/failed-statuses", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "failed statuses", "/admin/failed-statuses", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -158,7 +158,7 @@ func TestAdminFailedStatuses(t *testing.T) {
 
 func TestRateLimitAllowed(t *testing.T) {
 	for i := 0; i < 3; i++ {
-		fasttp.NewFuncTest(t, "rate ok", "/rate-limited/data", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+		fasttp.NewFunc(t, "rate ok", "/rate-limited/data", nil, func(tr *fasttp.T) fasttp.TestInfo {
 			return fasttp.TestInfo{
 				Method: http.MethodGet,
 				Status: http.StatusOK,
@@ -176,7 +176,7 @@ func TestRateLimitAllowed(t *testing.T) {
 
 func TestRateLimitExceeded(t *testing.T) {
 	// 4th request from same client should hit 429
-	fasttp.NewFuncTest(t, "rate exceeded", "/rate-limited/data", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "rate exceeded", "/rate-limited/data", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusTooManyRequests,
@@ -193,7 +193,7 @@ func TestRateLimitExceeded(t *testing.T) {
 
 func TestRateLimitDifferentClient(t *testing.T) {
 	// Different client should still be allowed
-	fasttp.NewFuncTest(t, "rate other client", "/rate-limited/data", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "rate other client", "/rate-limited/data", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -208,7 +208,7 @@ func TestRateLimitDifferentClient(t *testing.T) {
 // ---------- Cookie ----------
 
 func TestSetCookie(t *testing.T) {
-	fasttp.NewFuncTest(t, "set cookie", "/set-cookie", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "set cookie", "/set-cookie", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,

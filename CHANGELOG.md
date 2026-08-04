@@ -73,3 +73,28 @@ Every test uses `NewFuncTest` declarative style. Covers every HTTP edge case.
 - Every test NewFuncTest style
 - Covers: all HTTP methods, content types (JSON/XML/text/HTML/bytes), auth with scopes, rate limiting, streaming/delayed output, redirects, unicode, large responses, query params, cookies, failed status tracking
 
+---
+
+## [2026-08-04] Phase 4: API Redesign — Body, HeaderMap, R, T, New, NewFunc, status/
+
+### What
+Complete API redesign per promt2.md. Struct embedding all the way down — zero delegation methods.
+`Body` reusable via embedding, `HeaderMap` with variadic methods, `R` request, `T` test runner.
+
+### Files changed
+- `tests/runner.go` — Full rewrite: `Body` (raw/dataType/parsed + Data/Type/Parsed/JSON/XML/Buffer/YAML), `HeaderMap` (Header(pairs...)/Set), `R` (embeds HeaderMap+Body), `T` (embeds R + check slots), `New`/`NewFunc`, `Start`, `TestInfo`
+- `tests/checks.go` — All checks use `*T`, `checkData` reads via `Parsed()`, format checks auto-run in Run's parse phase
+- `tests/runner_test.go` — 16 tests migrated: `NewTest`→`New`, `NewFuncTest`→`NewFunc`, chain style→statement style (embedding means `JSON()` returns `*Body`), `tr.dataType`→`tr.Type()`
+- `sample/tests/*.go` — 93 tests migrated: `NewFuncTest`→`NewFunc`, `*fasttp.TestRunner`→`*fasttp.T`
+- `status/status.go` — New package: 15 constants (Ok, Created, NoContent, Moved, Found, BadRequest, Unauthorized, Forbidden, NotFound, MethodNotAllowed, Conflict, Unprocessable, TooMany, Internal, ServiceUnavailable) + `Text()`
+
+### Design highlights
+- **Zero delegation.** `t.JSON()` IS `Body.JSON()` via embedding chain `T→R→Body`
+- **Body reusable.** `raw` (request), `dataType`, `parsed` (response) all in one struct
+- **HeaderMap.Header(pairs...string)** — variadic pairs for ergonomic use
+- **Format validation auto.** Run's parse phase validates format per `Type()` — no manual check registration
+- **NewFunc uses New internally** — single implementation, proven by equivalence test
+
+### Test impact
+- 109/109 pass (16 core + 93 sample)
+

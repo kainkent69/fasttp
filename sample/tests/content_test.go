@@ -12,7 +12,7 @@ import (
 // ---------- Content-Type JSON ----------
 
 func TestContentTypeJSON(t *testing.T) {
-	fasttp.NewFuncTest(t, "json content", "/content/json", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "json content", "/content/json", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -33,7 +33,7 @@ func TestContentTypeJSON(t *testing.T) {
 // ---------- Content-Type XML ----------
 
 func TestContentTypeXML(t *testing.T) {
-	fasttp.NewFuncTest(t, "xml content", "/content/xml", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "xml content", "/content/xml", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -45,7 +45,7 @@ func TestContentTypeXML(t *testing.T) {
 // ---------- Content-Type text/plain ----------
 
 func TestContentTypeText(t *testing.T) {
-	fasttp.NewFuncTest(t, "text content", "/content/text", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "text content", "/content/text", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -61,7 +61,7 @@ func TestContentTypeText(t *testing.T) {
 // ---------- Content-Type text/html ----------
 
 func TestContentTypeHTML(t *testing.T) {
-	fasttp.NewFuncTest(t, "html content", "/content/html", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "html content", "/content/html", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -77,7 +77,7 @@ func TestContentTypeHTML(t *testing.T) {
 // ---------- Content-Type octet-stream ----------
 
 func TestContentTypeBytes(t *testing.T) {
-	fasttp.NewFuncTest(t, "bytes content", "/content/bytes", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "bytes content", "/content/bytes", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -98,7 +98,7 @@ func TestEchoJSONBody(t *testing.T) {
 		"count":   42,
 		"nested":  map[string]interface{}{"deep": "value"},
 	})
-	fasttp.NewFuncTest(t, "echo json", "/echo", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "echo json", "/echo", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusOK,
@@ -116,7 +116,7 @@ func TestEchoJSONBody(t *testing.T) {
 }
 
 func TestEchoEmptyObject(t *testing.T) {
-	fasttp.NewFuncTest(t, "echo empty", "/echo", []byte(`{}`), func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "echo empty", "/echo", []byte(`{}`), func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusOK,
@@ -134,7 +134,7 @@ func TestEchoArrayBody(t *testing.T) {
 	// Echo endpoint binds to map[string]interface{}, so arrays become
 	// {"array": [1,2,3]} — wrap in object for proper echo.
 	body := []byte(`{"values": [1,2,3]}`)
-	fasttp.NewFuncTest(t, "echo array", "/echo", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "echo array", "/echo", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusOK,
@@ -152,7 +152,7 @@ func TestEchoArrayBody(t *testing.T) {
 // ---------- Echo headers ----------
 
 func TestEchoHeaders(t *testing.T) {
-	fasttp.NewFuncTest(t, "echo headers", "/headers", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "echo headers", "/headers", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -173,7 +173,7 @@ func TestEchoHeaders(t *testing.T) {
 
 func TestReflectFull(t *testing.T) {
 	body := jsonMarshal(map[string]interface{}{"key": "val"})
-	fasttp.NewFuncTest(t, "reflect", "/reflect", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "reflect", "/reflect", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusOK,
@@ -193,7 +193,7 @@ func TestReflectFull(t *testing.T) {
 // ---------- Response header checks ----------
 
 func TestContentTypeHeaderPresent(t *testing.T) {
-	fasttp.NewFuncTest(t, "ct header", "/content/json", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "ct header", "/content/json", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -204,7 +204,7 @@ func TestContentTypeHeaderPresent(t *testing.T) {
 }
 
 func TestJSONContentTypeHeaderValue(t *testing.T) {
-	fasttp.NewFuncTest(t, "ct header value", "/items", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "ct header value", "/items", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -216,7 +216,7 @@ func TestJSONContentTypeHeaderValue(t *testing.T) {
 // ---------- Unicode ----------
 
 func TestUnicodeResponse(t *testing.T) {
-	fasttp.NewFuncTest(t, "unicode", "/unicode", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "unicode", "/unicode", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -233,7 +233,7 @@ func TestUnicodeResponse(t *testing.T) {
 // ---------- Large response ----------
 
 func TestLargeResponse(t *testing.T) {
-	fasttp.NewFuncTest(t, "large response", "/large", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "large response", "/large", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -250,7 +250,7 @@ func TestLargeResponse(t *testing.T) {
 // ---------- Query echo ----------
 
 func TestQueryEchoSingle(t *testing.T) {
-	fasttp.NewFuncTest(t, "query single", "/query-echo?q=search&page=1", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "query single", "/query-echo?q=search&page=1", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -264,7 +264,7 @@ func TestQueryEchoSingle(t *testing.T) {
 }
 
 func TestQueryEchoMultipleSort(t *testing.T) {
-	fasttp.NewFuncTest(t, "query multi sort", "/query-echo?sort=name&sort=price", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "query multi sort", "/query-echo?sort=name&sort=price", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -281,7 +281,7 @@ func TestQueryEchoMultipleSort(t *testing.T) {
 // ---------- Empty / no-content ----------
 
 func TestEmptyJSONResponse(t *testing.T) {
-	fasttp.NewFuncTest(t, "empty json", "/empty", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "empty json", "/empty", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -295,7 +295,7 @@ func TestEmptyJSONResponse(t *testing.T) {
 
 func TestNoContentResponse(t *testing.T) {
 	// 204 No Content has empty body — don't use Buffer (body bytes are nil)
-	fasttp.NewFuncTest(t, "no content", "/empty-body", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "no content", "/empty-body", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusNoContent,

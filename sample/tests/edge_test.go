@@ -33,9 +33,9 @@ func TestStatusCodes(t *testing.T) {
 			if tc.json {
 				info.JSON = true
 			}
-			fasttp.NewFuncTest(t, "status "+http.StatusText(tc.code),
+			fasttp.NewFunc(t, "status "+http.StatusText(tc.code),
 				"/status/"+itoa(tc.code), nil,
-				func(tr *fasttp.TestRunner) fasttp.TestInfo {
+				func(tr *fasttp.T) fasttp.TestInfo {
 					return info
 				})
 		})
@@ -43,7 +43,7 @@ func TestStatusCodes(t *testing.T) {
 }
 
 func TestStatusBadCode(t *testing.T) {
-	fasttp.NewFuncTest(t, "bad status code", "/status/999", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "bad status code", "/status/999", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusBadRequest,
@@ -55,7 +55,7 @@ func TestStatusBadCode(t *testing.T) {
 // ---------- Redirect ----------
 
 func TestRedirectPermanent(t *testing.T) {
-	fasttp.NewFuncTest(t, "redirect 301", "/redirect", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "redirect 301", "/redirect", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusMovedPermanently,
@@ -64,7 +64,7 @@ func TestRedirectPermanent(t *testing.T) {
 }
 
 func TestRedirectTemp(t *testing.T) {
-	fasttp.NewFuncTest(t, "redirect 302", "/redirect-temp", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "redirect 302", "/redirect-temp", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusFound,
@@ -76,7 +76,7 @@ func TestRedirectTemp(t *testing.T) {
 
 func TestSlowResponse(t *testing.T) {
 	start := time.Now()
-	fasttp.NewFuncTest(t, "slow", "/slow", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "slow", "/slow", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -98,7 +98,7 @@ func TestStreamDelayedOutput(t *testing.T) {
 		"delay_ms": 50,
 	})
 	// Queue the delayed write
-	fasttp.NewFuncTest(t, "stream post", "/stream", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "stream post", "/stream", body, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method:  http.MethodPost,
 			Status:  http.StatusAccepted,
@@ -114,7 +114,7 @@ func TestStreamDelayedOutput(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Collect
-	fasttp.NewFuncTest(t, "stream collect", "/stream/collect", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "stream collect", "/stream/collect", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -144,7 +144,7 @@ func TestStreamMultipleDelayed(t *testing.T) {
 			"data":     "batch-" + itoa(i),
 			"delay_ms": 10,
 		})
-		fasttp.NewFuncTest(t, "stream batch", "/stream", body, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+		fasttp.NewFunc(t, "stream batch", "/stream", body, func(tr *fasttp.T) fasttp.TestInfo {
 			return fasttp.TestInfo{
 				Method:  http.MethodPost,
 				Status:  http.StatusAccepted,
@@ -155,7 +155,7 @@ func TestStreamMultipleDelayed(t *testing.T) {
 	}
 	time.Sleep(80 * time.Millisecond)
 
-	fasttp.NewFuncTest(t, "stream collect all", "/stream/collect", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "stream collect all", "/stream/collect", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
@@ -173,21 +173,21 @@ func TestStreamMultipleDelayed(t *testing.T) {
 
 func TestFailedStatusTracking(t *testing.T) {
 	// Trigger some failures
-	fasttp.NewFuncTest(t, "fail 404", "/items/99999", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "fail 404", "/items/99999", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusNotFound,
 			JSON:   true,
 		}
 	})
-	fasttp.NewFuncTest(t, "fail 400", "/items/abc", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "fail 400", "/items/abc", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusBadRequest,
 			JSON:   true,
 		}
 	})
-	fasttp.NewFuncTest(t, "fail no auth", "/auth/profile", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "fail no auth", "/auth/profile", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusUnauthorized,
@@ -196,7 +196,7 @@ func TestFailedStatusTracking(t *testing.T) {
 	})
 
 	// Verify they were tracked (by admin)
-	fasttp.NewFuncTest(t, "check failures", "/admin/failed-statuses", nil, func(tr *fasttp.TestRunner) fasttp.TestInfo {
+	fasttp.NewFunc(t, "check failures", "/admin/failed-statuses", nil, func(tr *fasttp.T) fasttp.TestInfo {
 		return fasttp.TestInfo{
 			Method: http.MethodGet,
 			Status: http.StatusOK,
